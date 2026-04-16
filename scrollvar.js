@@ -40,11 +40,7 @@
  */
 export default class ScrollVar {
   static #instances = new Set();
-  static #boundScroll = null;
-  static #boundResize = null;
-  static #boundLoad = null;
-  static #boundPageShow = null;
-  static #fontsReadyAttached = false;
+  static #listening = false;
 
   /**
    * @param {string|Element|NodeList|HTMLCollection} selector
@@ -70,79 +66,31 @@ export default class ScrollVar {
 
   static #register(instance) {
     ScrollVar.#instances.add(instance);
-    ScrollVar.#ensureGlobalEvents();
+    if (!ScrollVar.#listening) {
+      window.addEventListener("scroll", ScrollVar.#handleScroll, { passive: true });
+      window.addEventListener("resize", ScrollVar.#handleResize);
+      ScrollVar.#listening = true;
+    }
   }
 
   static #unregister(instance) {
     ScrollVar.#instances.delete(instance);
     if (ScrollVar.#instances.size === 0) {
-      ScrollVar.#teardownGlobalEvents();
+      window.removeEventListener("scroll", ScrollVar.#handleScroll);
+      window.removeEventListener("resize", ScrollVar.#handleResize);
+      ScrollVar.#listening = false;
     }
   }
 
-  static #ensureGlobalEvents() {
-    if (!ScrollVar.#boundScroll) {
-      ScrollVar.#boundScroll = () => ScrollVar.#updateAll();
-      window.addEventListener("scroll", ScrollVar.#boundScroll, { passive: true });
-    }
-
-    if (!ScrollVar.#boundResize) {
-      ScrollVar.#boundResize = () => {
-        for (const instance of ScrollVar.#instances) {
-          instance.winHeight = window.innerHeight;
-          instance.refresh();
-        }
-      };
-      window.addEventListener("resize", ScrollVar.#boundResize);
-    }
-
-    if (!ScrollVar.#boundLoad) {
-      ScrollVar.#boundLoad = () => ScrollVar.#refreshAll();
-      window.addEventListener("load", ScrollVar.#boundLoad, { once: true });
-    }
-
-    if (!ScrollVar.#boundPageShow) {
-      ScrollVar.#boundPageShow = () => ScrollVar.#refreshAll();
-      window.addEventListener("pageshow", ScrollVar.#boundPageShow);
-    }
-
-    if (!ScrollVar.#fontsReadyAttached && document.fonts?.ready) {
-      ScrollVar.#fontsReadyAttached = true;
-      document.fonts.ready.then(() => ScrollVar.#refreshAll()).catch(() => {});
+  static #handleScroll() {
+    for (const instance of ScrollVar.#instances) {
+      instance.#update();
     }
   }
 
-  static #teardownGlobalEvents() {
-    if (ScrollVar.#boundScroll) {
-      window.removeEventListener("scroll", ScrollVar.#boundScroll);
-      ScrollVar.#boundScroll = null;
-    }
-
-    if (ScrollVar.#boundResize) {
-      window.removeEventListener("resize", ScrollVar.#boundResize);
-      ScrollVar.#boundResize = null;
-    }
-
-    if (ScrollVar.#boundLoad) {
-      window.removeEventListener("load", ScrollVar.#boundLoad);
-      ScrollVar.#boundLoad = null;
-    }
-
-    if (ScrollVar.#boundPageShow) {
-      window.removeEventListener("pageshow", ScrollVar.#boundPageShow);
-      ScrollVar.#boundPageShow = null;
-    }
-  }
-
-  static #refreshAll() {
+  static #handleResize() {
     for (const instance of ScrollVar.#instances) {
       instance.winHeight = window.innerHeight;
-      instance.refresh();
-    }
-  }
-
-  static #updateAll() {
-    for (const instance of ScrollVar.#instances) {
       instance.#update();
     }
   }
@@ -158,8 +106,7 @@ export default class ScrollVar {
     for (const el of elements) {
       // data-scroll-var="--custom-name" overrides the default variable name
       const varName = el.dataset.scrollVar || this.defaults.varName;
-      const metrics = this.#measure(el);
-      this.instances.push({ el, varName, top: metrics.top, height: metrics.height });
+      this.instances.push({ el, varName });
     }
   }
 
@@ -168,60 +115,30 @@ export default class ScrollVar {
       return;
     }
 
-    const scrollTop = window.scrollY;
-    const viewportCenter = scrollTop + this.winHeight / 2;
+    const viewportCenter = this.winHeight / 2;
 
-    for (const { el, varName, top, height } of this.instances) {
-      if (this.defaults.onlyVisible && (top + height < scrollTop || top > scrollTop + this.winHeight)) {
+    for (const { el, varName } of this.instances) {
+      const rect = el.getBoundingClientRect();
+
+      if (!Number.isFinite(rect.top) || !Number.isFinite(rect.height)) {
         continue;
       }
 
-      const elementCenter = top + height / 2;
+      if (this.defaults.onlyVisible && (rect.bottom < 0 || rect.top > this.winHeight)) {
+        continue;
+      }
+
+      const elementCenter = rect.top + rect.height / 2;
       el.style.setProperty(varName, Math.round(elementCenter - viewportCenter));
     }
   }
 
-  #measure(el) {
-    const rect = typeof el.getBoundingClientRect === "function" ? el.getBoundingClientRect() : null;
-
-    let top = rect ? rect.top + window.scrollY : 0;
-    let height = rect ? rect.height : 0;
-
-    if (!Number.isFinite(height) || height <= 0) {
-      height = el.offsetHeight ?? 0;
-    }
-
-    if ((!Number.isFinite(height) || height <= 0) && typeof el.getBBox === "function") {
-      try {
-        height = el.getBBox().height;
-      } catch {
-        height = 0;
-      }
-    }
-
-    if (!Number.isFinite(top)) {
-      top = 0;
-    }
-
-    if (!Number.isFinite(height)) {
-      height = 0;
-    }
-
-    return { top, height };
-  }
-
   // ─── public ─────────────────────────────────────────────────────────────────
 
-  /** Recalculate element positions after layout changes (e.g. fonts loaded, images resized). */
+  /** Force a recalculation outside scroll/resize if you need it. */
   refresh() {
     if (this.destroyed) {
       return;
-    }
-
-    for (const inst of this.instances) {
-      const metrics = this.#measure(inst.el);
-      inst.top = metrics.top;
-      inst.height = metrics.height;
     }
     this.#update();
   }
@@ -240,7 +157,7 @@ export default class ScrollVar {
     Object.assign(this.defaults, options);
     this.#collect(selector);
     this.defaults = saved;
-    this.#update();
+    this.refresh();
   }
 
   /** Remove CSS variables from all tracked elements and stop updates. */

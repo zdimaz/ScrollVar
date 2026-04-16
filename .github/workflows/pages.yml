@@ -31,8 +31,8 @@ jobs:
 
       - name: Prepare site
         run: |
-          mkdir -p _site
-          cp demo/index.html _site/index.html
+          mkdir -p _site/demo
+          cp demo/index.html _site/demo/index.html
           cp scrollvar.js _site/scrollvar.js
 
       - name: Upload demo artifact

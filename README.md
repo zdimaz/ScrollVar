@@ -34,7 +34,7 @@ Copy [`scrollvar.js`](./scrollvar.js) directly into your project — zero depend
 **JS — one line:**
 
 ```js
-import ScrollVar from "./scrollvar.js";
+import ScrollVar from "../scrollvar.js";
 new ScrollVar(".hero");
 ```
 
@@ -126,14 +126,12 @@ new ScrollVar("[data-scroll-var]");
 
 ### `.refresh()`
 
-Recalculate element positions. Call after layout changes (images loaded, accordion opened, etc.):
+Force an update outside normal scroll/resize events when you need it:
 
 ```js
 const sv = new ScrollVar(".card");
-document.fonts.ready.then(() => sv.refresh());
+sv.refresh();
 ```
-
-ScrollVar also refreshes tracked positions automatically on page `load`, `pageshow`, and after `document.fonts.ready` when supported.
 
 ### `.add(selector, options?)`
 
