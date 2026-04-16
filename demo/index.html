@@ -1054,6 +1054,8 @@
         height: 300px;
         flex-shrink: 0;
         position: relative;
+        border-radius: 20px;
+        overflow: hidden;
       }
       .tz-card {
         position: absolute;
@@ -3150,17 +3152,6 @@ elementCenter − viewportCenter</code></pre>
       }
       window.addEventListener("scroll", updateRingLabel, { passive: true });
       updateRingLabel();
-
-      // Scroll-to-top button visibility
-      const topBtn = document.getElementById("top-btn");
-      window.addEventListener(
-        "scroll",
-        () => {
-          topBtn.classList.toggle("visible", window.scrollY > 600);
-        },
-        { passive: true },
-      );
-      topBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
     </script>
   </body>
 </html>
