@@ -251,7 +251,9 @@
         flex-wrap: wrap;
       }
       .btn {
-        display: inline-block;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
         padding: 12px 28px;
         border-radius: 10px;
         font-weight: 600;
@@ -1961,42 +1963,19 @@
       }
 
       /* ── Scroll to top ──────────────────────────────── */
-      #top-btn {
+      .btn-top {
         position: fixed;
         bottom: 24px;
         right: 24px;
         width: 44px;
         height: 44px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        color: var(--text);
-        font-size: 24px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        pointer-events: none;
-        transform: translateY(8px);
-        transition:
-          opacity 0.25s,
-          transform 0.25s;
+        padding: 8px;
         z-index: 100;
-      }
-      #top-btn.visible {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0);
-      }
-      #top-btn:hover {
-        background: var(--accent);
-        border-color: var(--accent);
       }
     </style>
   </head>
   <body>
-    <button id="top-btn" aria-label="Scroll to top">↑</button>
+    <a href="#" class="btn btn-primary btn-top" aria-label="Scroll to top">↑</a>
 
     <nav>
       <div class="nav-logo">Scroll<span>Var</span></div>
@@ -3139,7 +3118,10 @@ elementCenter − viewportCenter</code></pre>
     <script type="module">
       import ScrollVar from "../scrollvar.js";
 
-      new ScrollVar(".sv-track");
+      new ScrollVar(".sv-track", {
+        varName: "--scroll-offset",
+        onlyVisible: false,
+      });
 
       // Live % readout for progress ring — read inline style ScrollVar writes
       const ringFillEl = document.querySelector(".ring-fill");
