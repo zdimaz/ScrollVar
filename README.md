@@ -5,7 +5,7 @@
 
 Instead of applying `transform` directly in JS, ScrollVar writes a single unitless number to a CSS variable. Every visual effect — parallax, fade, hue shift, scale, clip-path — is expressed in CSS. JS stays out of the way.
 
-**[Live Demo →](https://zdimaz.github.io/ScrollVar/)**
+**[Live Demo →](https://zdimaz.github.io/ScrollVar/demo/)**
 
 ---
 
