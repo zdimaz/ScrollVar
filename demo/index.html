@@ -1,0 +1,3164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScrollVar — CSS-driven scroll effects</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0d0d0f;
+        --surface: #18181c;
+        --border: #2a2a32;
+        --text: #e8e8f0;
+        --muted: #888;
+        --accent: #7c6dfa;
+        --code-bg: #1a1a22;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      /* ── Nav ────────────────────────────────────────── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 32px;
+        background: rgba(13, 13, 15, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-logo {
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.5px;
+      }
+      .nav-logo span {
+        color: var(--accent);
+      }
+      .nav-links {
+        display: flex;
+        gap: 24px;
+      }
+      .nav-links a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+
+      /* ── Sections shared ────────────────────────────── */
+      section {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 32px;
+        overflow: hidden;
+      }
+      .section-inner {
+        max-width: 960px;
+        width: 100%;
+      }
+      .align-center {
+        text-align: center;
+      }
+      .desc-center {
+        margin: 0 auto 40px;
+      }
+      .desc-center-lg {
+        margin: 0 auto 48px;
+      }
+      .code-center {
+        margin: 0 auto 48px;
+        text-align: left;
+      }
+      .code-w-460 {
+        max-width: 460px;
+      }
+      .code-w-480 {
+        max-width: 480px;
+      }
+      .code-w-520 {
+        max-width: 520px;
+      }
+      .split-stack-start {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .overflow-hidden {
+        overflow: hidden;
+      }
+      .muted-meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .muted-note {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .footer-note {
+        margin-top: 8px;
+      }
+      .bg-page {
+        background: var(--bg);
+      }
+      .bg-surface {
+        background: var(--surface);
+      }
+      .label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 12px;
+      }
+      h2 {
+        font-size: clamp(32px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -1px;
+        line-height: 1.1;
+        margin-bottom: 20px;
+      }
+      .desc {
+        color: var(--muted);
+        max-width: 540px;
+        margin-bottom: 40px;
+        font-size: 18px;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        font-size: 13px;
+        overflow-x: auto;
+        line-height: 1.7;
+      }
+      code {
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+      }
+      .tk {
+        color: #7c6dfa;
+      } /* property / key */
+      .tv {
+        color: #e8c97e;
+      } /* value */
+      .ts {
+        color: #7ec8a0;
+      } /* string */
+      .tf {
+        color: #e8a87c;
+      } /* function */
+      .tc {
+        color: #555;
+      } /* comment */
+
+      .demo-split {
+        display: flex;
+        align-items: center;
+        gap: 64px;
+        flex-wrap: wrap;
+      }
+      @media (max-width: 700px) {
+        .demo-split {
+          gap: 40px;
+        }
+      }
+
+      /* ═══════════════════════════════════════════════
+         1. HERO
+      ═══════════════════════════════════════════════ */
+      #hero {
+        position: relative;
+        background: var(--bg);
+        text-align: center;
+        flex-direction: column;
+      }
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 80% 60% at 50% 40%, #2d1f6e 0%, transparent 70%);
+        transform: translateY(calc(var(--scroll-offset) * 0.3px));
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+      .hero-content {
+        position: relative;
+        z-index: 1;
+      }
+      .hero-title {
+        font-size: clamp(48px, 9vw, 100px);
+        font-weight: 900;
+        letter-spacing: -3px;
+        line-height: 1;
+        margin-bottom: 24px;
+      }
+      .hero-title span {
+        color: var(--accent);
+      }
+      .hero-slogan {
+        margin-bottom: 14px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+      }
+      .hero-sub {
+        font-size: clamp(16px, 2.5vw, 22px);
+        color: var(--muted);
+        max-width: 520px;
+        margin: 0 auto 40px;
+      }
+      .cta-row {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-block;
+        padding: 12px 28px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 15px;
+        text-decoration: none;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 4px 20px rgba(124, 109, 250, 0.4);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 28px rgba(124, 109, 250, 0.5);
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-secondary:hover {
+        transform: translateY(-2px);
+      }
+      .scroll-hint {
+        margin-top: 80px;
+        color: var(--muted);
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        animation: bounce 2s ease-in-out infinite;
+      }
+      .scroll-hint svg {
+        opacity: 0.5;
+      }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(6px);
+        }
+      }
+
+      /* ═══════════════════════════════════════════════
+         2. PARALLAX
+      ═══════════════════════════════════════════════ */
+      #parallax {
+        background: var(--surface);
+      }
+      .parallax-layers {
+        position: relative;
+        width: 340px;
+        height: 340px;
+        flex-shrink: 0;
+      }
+      .layer {
+        position: absolute;
+        border-radius: 50%;
+        will-change: transform;
+      }
+      .layer-1 {
+        width: 280px;
+        height: 280px;
+        top: 30px;
+        left: 30px;
+        background: radial-gradient(circle, #3b2fa0 0%, transparent 70%);
+        transform: translateY(calc(var(--scroll-offset) * 0.05px));
+        transition: transform 0.12s ease-out;
+      }
+      .layer-2 {
+        width: 200px;
+        height: 200px;
+        top: 70px;
+        left: 70px;
+        background: radial-gradient(circle, #6c5ce7 0%, transparent 70%);
+        transform: translateY(calc(var(--scroll-offset) * 0.15px));
+        transition: transform 0.12s ease-out;
+      }
+      .layer-3 {
+        width: 100px;
+        height: 100px;
+        top: 120px;
+        left: 120px;
+        background: radial-gradient(circle, #a29bfe 0%, transparent 70%);
+        transform: translateY(calc(var(--scroll-offset) * 0.3px));
+        transition: transform 0.12s ease-out;
+      }
+
+      /* ═══════════════════════════════════════════════
+         3. FADE
+      ═══════════════════════════════════════════════ */
+      #fade {
+        background: var(--bg);
+      }
+      .fade-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        width: 100%;
+      }
+      .fade-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px 24px;
+        opacity: clamp(0, calc(1 - abs(var(--scroll-offset)) / 380), 1);
+        transform: translateY(calc(var(--scroll-offset) * 0.04px));
+        transition:
+          opacity 0.15s ease-out,
+          transform 0.15s ease-out;
+        will-change: opacity, transform;
+      }
+      .fade-card-icon {
+        font-size: 32px;
+        margin-bottom: 16px;
+      }
+      .fade-card h3 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .fade-card p {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      /* ═══════════════════════════════════════════════
+         4. HUE
+      ═══════════════════════════════════════════════ */
+      #hue {
+        background: var(--surface);
+      }
+      .hue-visual {
+        width: 300px;
+        height: 300px;
+        border-radius: 24px;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #6c5ce7, #fd79a8, #fdcb6e, #00cec9);
+        filter: hue-rotate(calc(var(--scroll-offset) / 2 * 1deg));
+        transition: filter 0.15s ease-out;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        will-change: filter;
+      }
+
+      /* ═══════════════════════════════════════════════
+         5. SCALE
+      ═══════════════════════════════════════════════ */
+      #scale-demo {
+        background: var(--bg);
+      }
+      .scale-items {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .scale-item {
+        width: 140px;
+        height: 140px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        scale: clamp(0.4, calc(1 - abs(var(--scroll-offset)) / 500), 1.15);
+        transition:
+          scale 0.15s ease-out,
+          transform 0.15s ease-out;
+        will-change: scale;
+      }
+      .si-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      }
+      .si-2 {
+        background: linear-gradient(135deg, #fd79a8, #fab1c6);
+        transform: translateY(calc(var(--scroll-offset) * -0.05px));
+      }
+      .si-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+      }
+      .si-4 {
+        background: linear-gradient(135deg, #e17055, #fab1a0);
+        transform: translateY(calc(var(--scroll-offset) * 0.05px));
+      }
+      .si-5 {
+        background: linear-gradient(135deg, #fdcb6e, #ffeaa7);
+      }
+
+      /* ═══════════════════════════════════════════════
+         6. 3D ROTATE
+      ═══════════════════════════════════════════════ */
+      #rotate-demo {
+        background: var(--surface);
+      }
+      .rotate-scene {
+        perspective: 900px;
+        flex-shrink: 0;
+      }
+      .rotate-card {
+        width: 300px;
+        height: 300px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #2d1f6e 0%, #6c5ce7 50%, #a29bfe 100%);
+        box-shadow: 0 30px 80px rgba(108, 92, 231, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 72px;
+        transform: rotateY(calc(var(--scroll-offset) / 8 * 1deg)) rotateX(calc(var(--scroll-offset) / -12 * 1deg));
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+
+      /* ═══════════════════════════════════════════════
+         7. CLIP-PATH REVEAL
+      ═══════════════════════════════════════════════ */
+      #clip-demo {
+        background: var(--bg);
+      }
+      .clip-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        max-width: 560px;
+      }
+      .clip-bar {
+        height: 64px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        font-weight: 700;
+        font-size: 18px;
+        clip-path: inset(0 calc(clamp(0%, (abs(var(--scroll-offset)) - 60) / 3 * 1%, 100%)) 0 0 round 12px);
+        transition: clip-path 0.15s ease-out;
+        will-change: clip-path;
+      }
+      .cb-1 {
+        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+      }
+      .cb-2 {
+        background: linear-gradient(90deg, #fd79a8, #6c5ce7);
+      }
+      .cb-3 {
+        background: linear-gradient(90deg, #00b894, #6c5ce7);
+      }
+      .cb-4 {
+        background: linear-gradient(90deg, #fdcb6e, #e17055);
+        color: #000;
+      }
+
+      /* ═══════════════════════════════════════════════
+         8. PROGRESS RING (SVG circle fill)
+      ═══════════════════════════════════════════════ */
+      #ring-demo {
+        background: var(--surface);
+      }
+      .ring-wrap {
+        width: 260px;
+        height: 260px;
+        flex-shrink: 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ring-svg {
+        width: 260px;
+        height: 260px;
+        transform: rotate(-90deg);
+      }
+      .ring-track {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 12;
+      }
+      .ring-fill {
+        fill: none;
+        stroke: url(#ring-grad);
+        stroke-width: 12;
+        stroke-linecap: round;
+        stroke-dasharray: 691; /* 2π × 110 */
+        stroke-dashoffset: clamp(
+          0px,
+          calc(691px - (691px * clamp(0, calc(1 - abs(var(--scroll-offset)) / 320), 1))),
+          691px
+        );
+        transition: stroke-dashoffset 0.2s ease-out;
+        will-change: stroke-dashoffset;
+      }
+      .ring-label {
+        position: absolute;
+        text-align: center;
+        font-size: 48px;
+        font-weight: 900;
+        letter-spacing: -2px;
+        color: var(--text);
+        /* percentage driven by scroll */
+        counter-reset: pct calc(round(clamp(0, (1 - abs(var(--scroll-offset)) / 320), 1) * 100));
+      }
+      .ring-pct {
+        font-size: 48px;
+        font-weight: 900;
+        color: var(--text);
+        line-height: 1;
+      }
+      .ring-pct-sub {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      /* ═══════════════════════════════════════════════
+         9. BLUR FOCUS
+      ═══════════════════════════════════════════════ */
+      #blur-demo {
+        background: var(--bg);
+      }
+      .blur-items {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .blur-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 32px;
+        text-align: center;
+        width: 200px;
+        filter: blur(calc(clamp(0px, abs(var(--scroll-offset)) / 40 * 1px, 12px)));
+        opacity: clamp(0.15, calc(1 - abs(var(--scroll-offset)) / 350), 1);
+        transition:
+          filter 0.2s ease-out,
+          opacity 0.2s ease-out;
+        will-change: filter, opacity;
+      }
+      .blur-item-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+      }
+      .blur-item h3 {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      /* ═══════════════════════════════════════════════
+         10. LETTER SPACING
+      ═══════════════════════════════════════════════ */
+      #letter-demo {
+        background: var(--surface);
+      }
+      .letter-word {
+        font-size: clamp(40px, 8vw, 96px);
+        font-weight: 900;
+        line-height: 1.2;
+        letter-spacing: calc(clamp(-5px, var(--scroll-offset) / 12 * 1px, 40px));
+        opacity: clamp(0.1, calc(1 - abs(var(--scroll-offset)) / 500), 1);
+        transition:
+          letter-spacing 0.2s ease-out,
+          opacity 0.2s ease-out;
+        will-change: letter-spacing, opacity;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .lw-1 {
+        color: var(--accent);
+      }
+      .lw-2 {
+        color: #fd79a8;
+      }
+      .lw-3 {
+        color: #00cec9;
+      }
+
+      /* ═══════════════════════════════════════════════
+         11. BORDER RADIUS MORPH
+      ═══════════════════════════════════════════════ */
+      #morph-demo {
+        background: var(--bg);
+      }
+      .morph-grid {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .morph-item {
+        width: 160px;
+        height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 52px;
+        border-radius: calc(clamp(12px, abs(var(--scroll-offset)) / 5 * 1px, 50%));
+        transition:
+          border-radius 0.2s ease-out,
+          transform 0.2s ease-out;
+        will-change: border-radius;
+      }
+      .mi-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      }
+      .mi-2 {
+        background: linear-gradient(135deg, #fd79a8, #6c5ce7);
+        transform: translateY(calc(var(--scroll-offset) * -0.06px));
+      }
+      .mi-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+      }
+      .mi-4 {
+        background: linear-gradient(135deg, #fdcb6e, #e17055);
+        transform: translateY(calc(var(--scroll-offset) * 0.06px));
+      }
+
+      /* ═══════════════════════════════════════════════
+         12. SKEW
+      ═══════════════════════════════════════════════ */
+      #skew-demo {
+        background: var(--surface);
+      }
+      .skew-band {
+        width: 100%;
+        padding: 40px 48px;
+        margin-bottom: 16px;
+        border-radius: 16px;
+        font-size: 24px;
+        font-weight: 800;
+        transform: skewX(calc(var(--scroll-offset) / 20 * 1deg));
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+      .skew-band:nth-child(even) {
+        transform: skewX(calc(var(--scroll-offset) / -20 * 1deg));
+      }
+      .sb-1 {
+        background: linear-gradient(90deg, #2d1f6e, #6c5ce7);
+      }
+      .sb-2 {
+        background: linear-gradient(90deg, #6c2d5e, #fd79a8);
+      }
+      .sb-3 {
+        background: linear-gradient(90deg, #1a4a3a, #00b894);
+        color: #d0fff5;
+      }
+
+      /* ═══════════════════════════════════════════════
+         13. BOX SHADOW DEPTH
+      ═══════════════════════════════════════════════ */
+      #shadow-demo {
+        background: var(--bg);
+      }
+      .shadow-cards {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .shadow-card {
+        width: 200px;
+        padding: 40px 24px;
+        text-align: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 calc(clamp(2px, (1 - abs(var(--scroll-offset)) / 280) * 40px, 40px))
+          calc(clamp(8px, (1 - abs(var(--scroll-offset)) / 280) * 80px, 80px))
+          rgba(108, 92, 231, calc(clamp(0, 1 - abs(var(--scroll-offset)) / 280, 1) * 0.5));
+        transform: translateY(calc((1 - clamp(0, 1 - abs(var(--scroll-offset)) / 280, 1)) * 8px));
+        transition:
+          box-shadow 0.2s ease-out,
+          transform 0.2s ease-out;
+        will-change: box-shadow, transform;
+      }
+      .shadow-card-icon {
+        font-size: 40px;
+        margin-bottom: 16px;
+      }
+      .shadow-card h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .shadow-card p {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* ═══════════════════════════════════════════════
+         14. COLOR TEMPERATURE
+      ═══════════════════════════════════════════════ */
+      #color-demo {
+        background: var(--surface);
+      }
+      .color-swatch {
+        width: 320px;
+        height: 320px;
+        border-radius: 28px;
+        flex-shrink: 0;
+        /* hsl shifts from cool (220°) to warm (30°) based on offset */
+        background: hsl(calc(220deg - clamp(-100deg, var(--scroll-offset) / 4 * 1deg, 100deg)), 80%, 55%);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        transition: background 0.2s ease-out;
+        will-change: background;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+      }
+
+      /* ═══════════════════════════════════════════════
+         15. PROGRESS BAR
+      ═══════════════════════════════════════════════ */
+      #progress-demo {
+        background: var(--bg);
+      }
+      .progress-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+        max-width: 560px;
+      }
+      .progress-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .progress-label-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+      }
+      .progress-name {
+        font-weight: 600;
+      }
+      .progress-track {
+        height: 12px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 99px;
+        width: clamp(0%, calc((1 - abs(var(--scroll-offset)) / 320) * 100%), 100%);
+        transition: width 0.2s ease-out;
+        will-change: width;
+      }
+      .pf-1 {
+        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+      }
+      .pf-2 {
+        background: linear-gradient(90deg, #fd79a8, #fab1c6);
+      }
+      .pf-3 {
+        background: linear-gradient(90deg, #00b894, #55efc4);
+      }
+      .pf-4 {
+        background: linear-gradient(90deg, #fdcb6e, #e17055);
+      }
+
+      /* ═══════════════════════════════════════════════
+         16. BACKGROUND ZOOM
+      ═══════════════════════════════════════════════ */
+      #bgzoom-demo {
+        background: var(--surface);
+      }
+      .bgzoom-box {
+        width: 340px;
+        height: 340px;
+        border-radius: 24px;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        background-image:
+          repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px),
+          repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px);
+        background-size: calc(40px + clamp(0px, abs(var(--scroll-offset)) / 8 * 1px, 80px))
+          calc(40px + clamp(0px, abs(var(--scroll-offset)) / 8 * 1px, 80px));
+        transition: background-size 0.2s ease-out;
+        will-change: background-size;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .bgzoom-inner {
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 24px 32px;
+        text-align: center;
+        border: 1px solid var(--border);
+      }
+      .bgzoom-inner span {
+        display: block;
+        font-size: 48px;
+        font-weight: 900;
+        color: var(--accent);
+      }
+
+      /* ═══════════════════════════════════════════════
+         HOW IT WORKS
+      ═══════════════════════════════════════════════ */
+      #how {
+        background: var(--surface);
+      }
+      .how-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      @media (max-width: 700px) {
+        .how-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .how-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+      }
+      .how-card h3 {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+
+      /* ═══════════════════════════════════════════════
+         INSTALL
+      ═══════════════════════════════════════════════ */
+      #install {
+        background: var(--bg);
+        text-align: center;
+      }
+      .install-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 560px;
+        margin: 0 auto;
+        text-align: left;
+      }
+      .install-step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .step-num {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .install-step code {
+        font-size: 14px;
+        color: var(--text);
+      }
+      .install-code {
+        word-break: break-word;
+      }
+
+      /* ── Footer ─────────────────────────────────────── */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 32px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      footer a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      /* ═══ 16. TRANSLATE X ═══ */
+      .tx-grid {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .tx-grid::before {
+        content: "";
+        display: none;
+      }
+      /* Generated via JS */
+      .tx-item {
+        width: 120px;
+        height: 120px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+      .tx-item:nth-child(odd) {
+        transform: translateX(calc(var(--scroll-offset) * 0.12px));
+      }
+      .tx-item:nth-child(even) {
+        transform: translateX(calc(var(--scroll-offset) * -0.12px));
+      }
+      .tx-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      }
+      .tx-2 {
+        background: linear-gradient(135deg, #fd79a8, #fab1c6);
+      }
+      .tx-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+      }
+      .tx-4 {
+        background: linear-gradient(135deg, #e17055, #fab1a0);
+      }
+      .tx-5 {
+        background: linear-gradient(135deg, #fdcb6e, #ffeaa7);
+        color: #333;
+      }
+      .tx-6 {
+        background: linear-gradient(135deg, #2d3436, #636e72);
+      }
+
+      /* ═══ 17. ROTATE Z ═══ */
+      .rotz-grid {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .rotz-item {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+      .rotz-item:nth-child(1) {
+        transform: rotate(calc(var(--scroll-offset) * 0.1deg));
+      }
+      .rotz-item:nth-child(2) {
+        transform: rotate(calc(var(--scroll-offset) * -0.2deg));
+      }
+      .rotz-item:nth-child(3) {
+        transform: rotate(calc(var(--scroll-offset) * 0.35deg));
+      }
+      .rotz-item:nth-child(4) {
+        transform: rotate(calc(var(--scroll-offset) * -0.05deg));
+      }
+      .rotz-item:nth-child(5) {
+        transform: rotate(calc(var(--scroll-offset) * 0.5deg));
+      }
+      .rotz-c1 {
+        border-color: #6c5ce7;
+      }
+      .rotz-c2 {
+        border-color: #fd79a8;
+      }
+      .rotz-c3 {
+        border-color: #00b894;
+      }
+      .rotz-c4 {
+        border-color: #fdcb6e;
+      }
+      .rotz-c5 {
+        border-color: #e17055;
+      }
+
+      /* ═══ 18. TRANSLATE Z ═══ */
+      .tz-scene {
+        perspective: 800px;
+        width: 300px;
+        height: 300px;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .tz-card {
+        position: absolute;
+        inset: 20px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 22px;
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+      .tz-back {
+        background: #2d1f6e;
+        transform: translateZ(calc(var(--scroll-offset) * -0.2px));
+      }
+      .tz-mid {
+        background: #6c5ce7;
+        inset: 40px;
+        border-radius: 16px;
+        transform: translateZ(calc(var(--scroll-offset) * -0.5px));
+      }
+      .tz-front {
+        background: #a29bfe;
+        color: #1a1235;
+        inset: 70px;
+        border-radius: 12px;
+        transform: translateZ(calc(var(--scroll-offset) * -0.9px));
+      }
+
+      /* ═══ 19. SKEW Y ═══ */
+      .skewy-grid {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .skewy-item {
+        flex: 1;
+        min-width: 140px;
+        padding: 40px 20px;
+        border-radius: 16px;
+        font-weight: 700;
+        font-size: 18px;
+        text-align: center;
+        transition:
+          transform 0.15s ease-out,
+          opacity 0.15s ease-out;
+        will-change: transform;
+        opacity: clamp(0.2, calc(1 - abs(var(--scroll-offset)) / 400), 1);
+      }
+      .skewy-item:nth-child(odd) {
+        transform: skewY(calc(var(--scroll-offset) / 14 * 1deg));
+      }
+      .skewy-item:nth-child(even) {
+        transform: skewY(calc(var(--scroll-offset) / -14 * 1deg));
+      }
+      .sy-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      }
+      .sy-2 {
+        background: linear-gradient(135deg, #fd79a8, #6c5ce7);
+      }
+      .sy-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+        color: #003d2a;
+      }
+
+      /* ═══ 20–24. FIVE FILTERS ═══ */
+      .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+      }
+      .filter-cell {
+        height: 180px;
+        border-radius: 16px;
+        display: flex;
+        align-items: flex-end;
+        padding: 16px;
+        transition: filter 0.2s ease-out;
+        will-change: filter;
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .filter-label {
+        background: rgba(0, 0, 0, 0.4);
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      .fc-bright {
+        background: linear-gradient(135deg, #fdcb6e, #e17055);
+        filter: brightness(calc(clamp(0.3, 1 + abs(var(--scroll-offset)) / 200, 2.5)));
+      }
+      .fc-contrast {
+        background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+        filter: contrast(calc(clamp(0.2, 1 + abs(var(--scroll-offset)) / 150, 3)));
+      }
+      .fc-saturate {
+        background: linear-gradient(135deg, #00b894, #fdcb6e, #fd79a8);
+        filter: saturate(calc(clamp(0, 1 - abs(var(--scroll-offset)) / 250, 1)));
+      }
+      .fc-gray {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        filter: grayscale(calc(clamp(0, abs(var(--scroll-offset)) / 300, 1)));
+      }
+      .fc-sepia {
+        background: linear-gradient(135deg, #fdcb6e, #e17055, #00b894);
+        filter: sepia(calc(clamp(0, abs(var(--scroll-offset)) / 280, 1)));
+      }
+
+      /* ═══ 25–26. INVERT + DROP SHADOW ═══ */
+      .invert-grid {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .invert-box {
+        width: 260px;
+        height: 260px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #6c5ce7 0%, #fd79a8 50%, #fdcb6e 100%);
+        display: flex;
+        align-items: flex-end;
+        padding: 20px;
+        filter: invert(calc(clamp(0, abs(var(--scroll-offset)) / 260, 1)));
+        transition: filter 0.2s ease-out;
+        will-change: filter;
+      }
+      .dropshadow-box {
+        width: 260px;
+        height: 260px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #2d1f6e, #6c5ce7);
+        display: flex;
+        align-items: flex-end;
+        padding: 20px;
+        filter: drop-shadow(0 0 calc(clamp(0px, (1 - abs(var(--scroll-offset)) / 280) * 40px, 40px)) #7c6dfa);
+        transition: filter 0.2s ease-out;
+        will-change: filter;
+      }
+      .inv-label {
+        background: rgba(0, 0, 0, 0.4);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* ═══ 27–28. TEXT COLOR + BORDER COLOR ═══ */
+      .textcolor-words {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 48px;
+      }
+      .tc-word {
+        font-size: clamp(48px, 8vw, 96px);
+        font-weight: 900;
+        line-height: 1;
+        transition: color 0.2s ease-out;
+        will-change: color;
+      }
+      .tw-1 {
+        color: hsl(calc(220deg + var(--scroll-offset) / 3 * 1deg), 80%, 65%);
+      }
+      .tw-2 {
+        color: hsl(calc(300deg - var(--scroll-offset) / 3 * 1deg), 80%, 65%);
+      }
+      .tw-3 {
+        color: hsl(calc(160deg + var(--scroll-offset) / 4 * 1deg), 80%, 65%);
+      }
+
+      .border-boxes {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .border-box {
+        width: 100px;
+        height: 100px;
+        border-radius: 16px;
+        border: 4px solid;
+        transition: border-color 0.2s ease-out;
+        will-change: border-color;
+      }
+      .bb-1 {
+        border-color: hsl(calc(var(--scroll-offset) / 2 * 1deg + 220deg), 80%, 60%);
+      }
+      .bb-2 {
+        border-color: hsl(calc(var(--scroll-offset) / 2 * 1deg + 280deg), 80%, 60%);
+      }
+      .bb-3 {
+        border-color: hsl(calc(var(--scroll-offset) / 2 * 1deg + 160deg), 80%, 60%);
+      }
+      .bb-4 {
+        border-color: hsl(calc(var(--scroll-offset) / 2 * 1deg + 40deg), 80%, 60%);
+      }
+
+      /* ═══ 29. TEXT SHADOW ═══ */
+      .glow-text {
+        font-size: clamp(48px, 7vw, 96px);
+        font-weight: 900;
+        line-height: 1.2;
+        transition: text-shadow 0.2s ease-out;
+        will-change: text-shadow;
+      }
+      .glow-1 {
+        color: #a29bfe;
+        text-shadow:
+          0 0 calc(clamp(0px, abs(var(--scroll-offset)) / 8 * 1px, 40px)) #7c6dfa,
+          0 0 calc(clamp(0px, abs(var(--scroll-offset)) / 4 * 1px, 80px)) rgba(124, 109, 250, 0.4);
+      }
+      .glow-2 {
+        color: #fd79a8;
+        text-shadow:
+          0 0 calc(clamp(0px, abs(var(--scroll-offset)) / 8 * 1px, 40px)) #fd79a8,
+          0 0 calc(clamp(0px, abs(var(--scroll-offset)) / 4 * 1px, 80px)) rgba(253, 121, 168, 0.4);
+      }
+      .glow-3 {
+        color: #55efc4;
+        text-shadow:
+          0 0 calc(clamp(0px, abs(var(--scroll-offset)) / 8 * 1px, 40px)) #00b894,
+          0 0 calc(clamp(0px, abs(var(--scroll-offset)) / 4 * 1px, 80px)) rgba(0, 184, 148, 0.4);
+      }
+
+      /* ═══ 30. FONT SIZE ═══ */
+      .fontsize-line {
+        display: flex;
+        gap: 16px;
+        align-items: baseline;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .fs-word {
+        font-weight: 900;
+        line-height: 1;
+        transition: font-size 0.2s ease-out;
+        will-change: font-size;
+      }
+      .fw-1 {
+        font-size: clamp(24px, calc(clamp(24px, (1 - abs(var(--scroll-offset)) / 300) * 120px, 120px)), 120px);
+        color: var(--accent);
+      }
+      .fw-2 {
+        font-size: clamp(18px, calc(clamp(18px, (1 - abs(var(--scroll-offset)) / 300) * 60px, 60px)), 60px);
+        color: var(--muted);
+      }
+      .fw-3 {
+        font-size: clamp(24px, calc(clamp(24px, (1 - abs(var(--scroll-offset)) / 300) * 100px, 100px)), 100px);
+        color: #fd79a8;
+      }
+
+      /* ═══ 31. WORD SPACING ═══ */
+      .word-spacer {
+        font-size: clamp(20px, 3vw, 36px);
+        font-weight: 700;
+        line-height: 2;
+        word-spacing: clamp(-2px, calc(abs(var(--scroll-offset)) / 12 * 1px), 48px);
+        opacity: clamp(0.2, calc(1 - abs(var(--scroll-offset)) / 400), 1);
+        transition:
+          word-spacing 0.2s ease-out,
+          opacity 0.2s ease-out;
+        will-change: word-spacing;
+      }
+      .ws-1 {
+        color: var(--accent);
+      }
+      .ws-2 {
+        color: #fd79a8;
+      }
+      .ws-3 {
+        color: #55efc4;
+      }
+
+      /* ═══ 32. LINE HEIGHT ═══ */
+      .lineheight-block {
+        font-size: clamp(28px, 4vw, 52px);
+        font-weight: 800;
+        line-height: clamp(0.8, calc(1 + (1 - abs(var(--scroll-offset)) / 300) * 1.2), 2.4);
+        transition: line-height 0.2s ease-out;
+        will-change: line-height;
+        color: var(--accent);
+      }
+
+      /* ═══ 33. CLIP CIRCLE ═══ */
+      .circle-reveal-wrap {
+        flex-shrink: 0;
+      }
+      .circle-reveal-box {
+        width: 300px;
+        height: 300px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+        clip-path: circle(clamp(0%, calc((1 - abs(var(--scroll-offset)) / 320) * 80%), 80%));
+        transition: clip-path 0.2s ease-out;
+        will-change: clip-path;
+      }
+
+      /* ═══ 34. CLIP POLYGON STAR ═══ */
+      .star-wrap {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 300px;
+        height: 300px;
+      }
+      .star-morph {
+        width: 260px;
+        height: 260px;
+        background: linear-gradient(135deg, #fdcb6e, #e17055, #fd79a8);
+        clip-path: polygon(
+          50% clamp(0%, calc(abs(var(--scroll-offset)) / 6 * 1%), 50%),
+          clamp(50%, calc(100% - abs(var(--scroll-offset)) / 6 * 1%), 100%) 50%,
+          50% clamp(50%, calc(100% - abs(var(--scroll-offset)) / 6 * 1%), 100%),
+          clamp(0%, calc(abs(var(--scroll-offset)) / 6 * 1%), 50%) 50%
+        );
+        transition: clip-path 0.2s ease-out;
+        will-change: clip-path;
+      }
+
+      /* ═══ 35. OUTLINE OFFSET ═══ */
+      .outline-items {
+        display: flex;
+        gap: 48px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 48px 0;
+      }
+      .outline-item {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        outline: 2px solid var(--accent);
+        outline-offset: clamp(0px, abs(var(--scroll-offset)) / 12 * 1px, 24px);
+        transition: outline-offset 0.2s ease-out;
+        will-change: outline-offset;
+      }
+      .oi-1 {
+        border-color: #6c5ce7;
+        outline-color: #6c5ce7;
+      }
+      .oi-2 {
+        border-color: #fd79a8;
+        outline-color: #fd79a8;
+      }
+      .oi-3 {
+        border-color: #00b894;
+        outline-color: #00b894;
+      }
+
+      /* ═══ 36. BORDER WIDTH ═══ */
+      .borderw-items {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .borderw-item {
+        width: 140px;
+        height: 140px;
+        border-radius: 20px;
+        background: var(--surface);
+        border-style: solid;
+        border-width: clamp(1px, calc((1 - abs(var(--scroll-offset)) / 280) * 16px), 16px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 900;
+        transition: border-width 0.2s ease-out;
+        will-change: border-width;
+      }
+      .bw-1 {
+        border-color: #6c5ce7;
+        color: #6c5ce7;
+      }
+      .bw-2 {
+        border-color: #fd79a8;
+        color: #fd79a8;
+      }
+      .bw-3 {
+        border-color: #00b894;
+        color: #00b894;
+      }
+      .bw-4 {
+        border-color: #fdcb6e;
+        color: #fdcb6e;
+      }
+
+      /* ═══ 37. SVG STROKE WIDTH ═══ */
+      .strokew-svg {
+        width: 300px;
+        height: 300px;
+        flex-shrink: 0;
+      }
+      .sw-circle {
+        stroke-width: clamp(1px, calc((1 - abs(var(--scroll-offset)) / 300) * 18px), 18px);
+        transition: stroke-width 0.2s ease-out;
+        will-change: stroke-width;
+      }
+      .sw-c2 {
+        stroke-width: clamp(1px, calc((1 - abs(var(--scroll-offset)) / 300) * 12px), 12px);
+      }
+      .sw-c3 {
+        stroke-width: clamp(1px, calc((1 - abs(var(--scroll-offset)) / 300) * 8px), 8px);
+      }
+
+      /* ═══ 38. SVG FILL COLOR ═══ */
+      .svgfill-svg {
+        width: 100%;
+        max-width: 500px;
+        height: 200px;
+      }
+      .sf-shape {
+        transition:
+          fill 0.2s ease-out,
+          opacity 0.2s ease-out;
+        will-change: fill, opacity;
+        opacity: clamp(0.2, calc(1 - abs(var(--scroll-offset)) / 350), 1);
+      }
+      .sf-1 {
+        fill: hsl(calc(220deg + var(--scroll-offset) / 3 * 1deg), 80%, 65%);
+      }
+      .sf-2 {
+        fill: hsl(calc(300deg - var(--scroll-offset) / 3 * 1deg), 80%, 65%);
+      }
+      .sf-3 {
+        fill: hsl(calc(160deg + var(--scroll-offset) / 4 * 1deg), 80%, 65%);
+      }
+      .sf-4 {
+        fill: hsl(calc(40deg + var(--scroll-offset) / 3 * 1deg), 80%, 65%);
+      }
+
+      /* ═══ 39. BACKGROUND POSITION ═══ */
+      .bgpos-box {
+        width: 340px;
+        height: 340px;
+        border-radius: 24px;
+        flex-shrink: 0;
+        background:
+          linear-gradient(135deg, #2d1f6e 0%, transparent 60%),
+          repeating-linear-gradient(45deg, #6c5ce7 0px, #6c5ce7 2px, transparent 2px, transparent 20px);
+        background-size:
+          100% 100%,
+          30px 30px;
+        background-position:
+          0 0,
+          0 calc(var(--scroll-offset) * 0.4px);
+        transition: background-position 0.2s ease-out;
+        will-change: background-position;
+        border: 1px solid var(--border);
+      }
+
+      /* ═══ 40. STAGGER ═══ */
+      .stagger-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      .stagger-item {
+        height: 120px;
+        border-radius: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--accent);
+        transform: translateY(calc(var(--scroll-offset) * 0.12px));
+        opacity: clamp(0, calc(1 - abs(var(--scroll-offset)) / 350), 1);
+        will-change: transform, opacity;
+      }
+      .stagger-item {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+      }
+      .sg-1 {
+        transition-delay: 0ms;
+      }
+      .sg-2 {
+        transition-delay: 60ms;
+      }
+      .sg-3 {
+        transition-delay: 120ms;
+      }
+      .sg-4 {
+        transition-delay: 80ms;
+      }
+      .sg-5 {
+        transition-delay: 140ms;
+      }
+      .sg-6 {
+        transition-delay: 200ms;
+      }
+      .sg-7 {
+        transition-delay: 160ms;
+      }
+      .sg-8 {
+        transition-delay: 220ms;
+      }
+      .sg-9 {
+        transition-delay: 280ms;
+      }
+
+      /* ═══ 41. BACKDROP FILTER ═══ */
+      .backdrop-wrap {
+        width: 300px;
+        height: 300px;
+        border-radius: 24px;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .backdrop-bg {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #6c5ce7, #fd79a8, #fdcb6e, #00cec9);
+        border-radius: 24px;
+      }
+      .backdrop-panel {
+        position: absolute;
+        inset: 40px;
+        border-radius: 16px;
+        background: rgba(13, 13, 15, 0.3);
+        backdrop-filter: blur(clamp(0px, abs(var(--scroll-offset)) / 15 * 1px, 24px));
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: backdrop-filter 0.2s ease-out;
+        will-change: backdrop-filter;
+      }
+
+      /* ═══ 42. MULTI-TRANSFORM ═══ */
+      .multitr-scene {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .multitr-card {
+        width: 140px;
+        height: 140px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: 900;
+        transform: translateY(calc(var(--scroll-offset) * 0.25px)) rotate(calc(var(--scroll-offset) / 12 * 1deg))
+          scale(clamp(0.3, calc(1 - abs(var(--scroll-offset)) / 400), 1.1));
+        filter: blur(clamp(0px, abs(var(--scroll-offset)) / 35 * 1px, 8px));
+        opacity: clamp(0.1, calc(1 - abs(var(--scroll-offset)) / 380), 1);
+        transition:
+          transform 0.15s ease-out,
+          filter 0.15s ease-out,
+          opacity 0.15s ease-out;
+        will-change: transform, filter, opacity;
+      }
+      .mt-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        transition-delay: 0ms;
+      }
+      .mt-2 {
+        background: linear-gradient(135deg, #fd79a8, #fab1c6);
+        transition-delay: 80ms;
+        transform: translateY(calc(var(--scroll-offset) * -0.25px)) rotate(calc(var(--scroll-offset) / -12 * 1deg))
+          scale(clamp(0.3, calc(1 - abs(var(--scroll-offset)) / 400), 1.1));
+      }
+      .mt-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+        color: #003;
+        transition-delay: 160ms;
+      }
+
+      /* ═══ 43. PERSPECTIVE SQUISH ═══ */
+      .persp-grid {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .persp-item {
+        width: 160px;
+        padding: 40px 0;
+        border-radius: 16px;
+        font-size: 20px;
+        font-weight: 800;
+        text-align: center;
+        transition: transform 0.2s ease-out;
+        will-change: transform;
+      }
+      .pi-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        transform: scaleX(clamp(0.1, calc(1 - abs(var(--scroll-offset)) / 300), 1.2))
+          scaleY(clamp(0.5, calc(1 + abs(var(--scroll-offset)) / 600), 1));
+      }
+      .pi-2 {
+        background: linear-gradient(135deg, #fd79a8, #6c5ce7);
+        transform: scaleY(clamp(0.1, calc(1 - abs(var(--scroll-offset)) / 300), 1.2))
+          scaleX(clamp(0.5, calc(1 + abs(var(--scroll-offset)) / 600), 1));
+      }
+      .pi-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+        color: #003;
+        transform: scaleX(clamp(0.1, calc(1 - abs(var(--scroll-offset)) / 300), 1.2))
+          scaleY(clamp(0.5, calc(1 + abs(var(--scroll-offset)) / 600), 1));
+      }
+
+      /* ═══ 44. OUTLINE COLOR ═══ */
+      .outcolor-items {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 40px 0;
+      }
+      .outcolor-item {
+        width: 120px;
+        height: 120px;
+        border-radius: 20px;
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        outline: 4px solid;
+        outline-offset: 4px;
+        outline-color: hsl(calc(220deg + var(--scroll-offset) / 2 * 1deg), 80%, 60%);
+        transition: outline-color 0.2s ease-out;
+        will-change: outline-color;
+      }
+      .oc-2 {
+        outline-color: hsl(calc(280deg + var(--scroll-offset) / 2 * 1deg), 80%, 60%);
+      }
+      .oc-3 {
+        outline-color: hsl(calc(160deg + var(--scroll-offset) / 2 * 1deg), 80%, 60%);
+      }
+      .oc-4 {
+        outline-color: hsl(calc(40deg + var(--scroll-offset) / 2 * 1deg), 80%, 60%);
+      }
+
+      /* ═══ 45. SCALE X/Y SPLIT ═══ */
+      .scalexy-items {
+        display: flex;
+        gap: 48px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 40px 0;
+      }
+      .scalexy-item {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        transition: transform 0.15s ease-out;
+        will-change: transform;
+      }
+      .sxy-1 {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        transform: scaleX(clamp(0.2, calc(1 - abs(var(--scroll-offset)) / 280), 1.8))
+          scaleY(clamp(0.5, calc(1 + abs(var(--scroll-offset)) / 560), 1.5));
+      }
+      .sxy-2 {
+        background: linear-gradient(135deg, #fd79a8, #fab1c6);
+        transform: scaleY(clamp(0.2, calc(1 - abs(var(--scroll-offset)) / 280), 1.8))
+          scaleX(clamp(0.5, calc(1 + abs(var(--scroll-offset)) / 560), 1.5));
+      }
+      .sxy-3 {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+        transform: scaleX(clamp(0.2, calc(1 - abs(var(--scroll-offset)) / 280), 1.8))
+          scaleY(clamp(0.5, calc(1 + abs(var(--scroll-offset)) / 560), 1.5));
+      }
+
+      /* ═══ 46. CONIC GRADIENT ═══ */
+      .conic-visual {
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: conic-gradient(
+          from calc(var(--scroll-offset) * 0.5deg),
+          #6c5ce7,
+          #fd79a8,
+          #fdcb6e,
+          #00b894,
+          #6c5ce7
+        );
+        box-shadow: 0 20px 60px rgba(108, 92, 231, 0.4);
+        transition: background 0.15s ease-out;
+        will-change: background;
+      }
+
+      /* ═══ 47. TEXT INDENT ═══ */
+      .indent-lines {
+        overflow: hidden;
+      }
+      .indent-line {
+        font-size: clamp(40px, 7vw, 88px);
+        font-weight: 900;
+        line-height: 1.1;
+        text-indent: clamp(0px, calc(abs(var(--scroll-offset)) / 3 * 1px), 600px);
+        opacity: clamp(0.05, calc(1 - abs(var(--scroll-offset)) / 400), 1);
+        white-space: nowrap;
+        overflow: hidden;
+        transition:
+          text-indent 0.2s ease-out,
+          opacity 0.2s ease-out;
+        will-change: text-indent, opacity;
+      }
+      .il-1 {
+        color: var(--accent);
+      }
+      .il-2 {
+        color: #fd79a8;
+      }
+      .il-3 {
+        color: #55efc4;
+      }
+
+      /* ═══ 48. WAVE STAGGER ═══ */
+      .wave-row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 48px 0;
+      }
+      .wave-item {
+        width: 72px;
+        height: 72px;
+        border-radius: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--accent);
+        transform: translateY(calc(var(--scroll-offset) * 0.15px));
+        opacity: clamp(0, calc(1 - abs(var(--scroll-offset)) / 350), 1);
+        will-change: transform, opacity;
+      }
+      .wi-1 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 0ms;
+      }
+      .wi-2 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 50ms;
+      }
+      .wi-3 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 100ms;
+      }
+      .wi-4 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 150ms;
+      }
+      .wi-5 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 200ms;
+      }
+      .wi-6 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 250ms;
+      }
+      .wi-7 {
+        transition:
+          transform 0.2s ease-out,
+          opacity 0.2s ease-out;
+        transition-delay: 300ms;
+      }
+
+      /* ═══ 49. COMPOSITE CARD ═══ */
+      .composite-scene {
+        perspective: 800px;
+        width: 300px;
+        height: 300px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .composite-card {
+        width: 260px;
+        height: 260px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #6c5ce7, #fd79a8, #fdcb6e, #00cec9);
+        transform: translateY(calc(var(--scroll-offset) * 0.3px)) rotate(calc(var(--scroll-offset) / 10 * 1deg))
+          scale(clamp(0.3, calc(1 - abs(var(--scroll-offset)) / 400), 1.1));
+        filter: blur(clamp(0px, abs(var(--scroll-offset)) / 30 * 1px, 8px))
+          hue-rotate(calc(var(--scroll-offset) * 0.5deg));
+        opacity: clamp(0.1, calc(1 - abs(var(--scroll-offset)) / 400), 1);
+        transition:
+          transform 0.15s ease-out,
+          filter 0.15s ease-out,
+          opacity 0.15s ease-out;
+        will-change: transform, filter, opacity;
+      }
+
+      /* ═══ 50. SHOWCASE STRIP ═══ */
+      .showcase-strip {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .showcase-tile {
+        width: 100px;
+        height: 100px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        text-align: center;
+        padding: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        will-change: transform;
+      }
+      .st-ty {
+        transform: translateY(calc(var(--scroll-offset) * 0.2px));
+        transition: transform 0.15s ease-out;
+      }
+      .st-tx {
+        transform: translateX(calc(var(--scroll-offset) * 0.2px));
+        transition: transform 0.15s ease-out;
+      }
+      .st-rz {
+        transform: rotate(calc(var(--scroll-offset) / 8 * 1deg));
+        transition: transform 0.15s ease-out;
+      }
+      .st-rx {
+        transform: rotateX(calc(var(--scroll-offset) / 8 * 1deg));
+        transition: transform 0.15s ease-out;
+      }
+      .st-sc {
+        scale: clamp(0.5, calc(1 - abs(var(--scroll-offset)) / 400), 1.3);
+        transition: scale 0.15s ease-out;
+      }
+      .st-sk {
+        transform: skewX(calc(var(--scroll-offset) / 10 * 1deg));
+        transition: transform 0.15s ease-out;
+      }
+      .st-op {
+        opacity: clamp(0, calc(1 - abs(var(--scroll-offset)) / 300), 1);
+        transition: opacity 0.15s ease-out;
+      }
+      .st-bl {
+        filter: blur(clamp(0px, abs(var(--scroll-offset)) / 30 * 1px, 8px));
+        transition: filter 0.15s ease-out;
+      }
+      .st-hu {
+        filter: hue-rotate(calc(var(--scroll-offset) / 2 * 1deg));
+        background: linear-gradient(135deg, #6c5ce7, #fd79a8);
+        transition: filter 0.15s ease-out;
+      }
+      .st-br {
+        filter: brightness(calc(clamp(0.3, 1 + abs(var(--scroll-offset)) / 200, 2.5)));
+        background: linear-gradient(135deg, #fdcb6e, #e17055);
+        transition: filter 0.15s ease-out;
+      }
+
+      /* ── Scroll to top ──────────────────────────────── */
+      #top-btn {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 44px;
+        height: 44px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(8px);
+        transition:
+          opacity 0.25s,
+          transform 0.25s;
+        z-index: 100;
+      }
+      #top-btn.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      #top-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <button id="top-btn" aria-label="Scroll to top">↑</button>
+
+    <nav>
+      <div class="nav-logo">Scroll<span>Var</span></div>
+      <div class="nav-links">
+        <a href="https://github.com/zdimaz/scrollvar">GitHub</a>
+      </div>
+    </nav>
+
+    <!-- ═══════════════ 1. HERO ═══════════════ -->
+    <section id="hero">
+      <div class="hero-bg sv-track"></div>
+      <div class="hero-content">
+        <p class="label">CSS-driven scroll effects</p>
+        <h1 class="hero-title">Scroll<span>Var</span></h1>
+        <p class="hero-slogan">Add JS once. Control everything through CSS.</p>
+        <p class="hero-sub">One CSS variable. Unlimited effects. All logic lives in CSS.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/zdimaz/scrollvar">View on GitHub</a>
+          <a class="btn btn-secondary" href="#install">Use locally</a>
+        </div>
+        <div class="scroll-hint">
+          <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+            <rect x="1" y="1" width="14" height="22" rx="7" stroke="currentColor" stroke-width="1.5" />
+            <circle cx="8" cy="8" r="2" fill="currentColor" />
+          </svg>
+          Scroll to see 50 effects
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 2. PARALLAX ═══════════════ -->
+    <section id="parallax">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="parallax-layers">
+            <div class="layer layer-1 sv-track"></div>
+            <div class="layer layer-2 sv-track"></div>
+            <div class="layer layer-3 sv-track"></div>
+          </div>
+          <div>
+            <p class="label">Effect 01 — Parallax</p>
+            <h2>Depth from one variable</h2>
+            <p class="desc">
+              Three layers, three <code>--speed</code> values. Mobile override in pure <code>@media</code>.
+            </p>
+            <pre><code><span class="tk">.layer-1</span> { <span class="tk">--speed</span>: <span class="tv">0.05</span>; }
+<span class="tk">.layer-2</span> { <span class="tk">--speed</span>: <span class="tv">0.15</span>; }
+<span class="tk">.layer-3</span> { <span class="tk">--speed</span>: <span class="tv">0.30</span>; }
+
+<span class="tk">.layer</span> {
+  <span class="tk">transform</span>: <span class="tf">translateY</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * <span class="tf">var</span>(--speed) * 1px));
+  <span class="tk">transition</span>: transform 0.12s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 3. FADE ═══════════════ -->
+    <section id="fade">
+      <div class="section-inner">
+        <p class="label">Effect 02 — Fade</p>
+        <h2>Cards fade at the edges</h2>
+        <p class="desc"><code>abs()</code> makes the effect symmetrical — fades both on enter and exit.</p>
+        <pre><code><span class="tk">.card</span> {
+  <span class="tk">opacity</span>: <span class="tf">clamp</span>(0, <span class="tf">calc</span>(1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 380), 1);
+  <span class="tk">transform</span>: <span class="tf">translateY</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * 0.04px));
+  <span class="tk">transition</span>: opacity 0.15s ease-out, transform 0.15s ease-out;
+}</code></pre>
+        <br />
+        <div class="fade-grid">
+          <div class="fade-card sv-track">
+            <div class="fade-card-icon">✦</div>
+            <h3>CSS-first</h3>
+            <p>All effect logic lives in CSS.</p>
+          </div>
+          <div class="fade-card sv-track">
+            <div class="fade-card-icon">⚡</div>
+            <h3>~700 bytes</h3>
+            <p>Zero dependencies, single file.</p>
+          </div>
+          <div class="fade-card sv-track">
+            <div class="fade-card-icon">◈</div>
+            <h3>@media ready</h3>
+            <p>Override any variable in media queries.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 4. HUE ═══════════════ -->
+    <section id="hue">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="hue-visual sv-track"></div>
+          <div>
+            <p class="label">Effect 03 — Hue rotate</p>
+            <h2>Any CSS property</h2>
+            <p class="desc">
+              Not just transforms. <code>filter</code>, <code>background</code>, <code>clip-path</code> — anything that
+              accepts a number.
+            </p>
+            <pre><code><span class="tk">.gradient</span> {
+  <span class="tk">filter</span>: <span class="tf">hue-rotate</span>(
+    <span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) / 2 * 1deg)
+  );
+  <span class="tk">transition</span>: filter 0.15s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 5. SCALE ═══════════════ -->
+    <section id="scale-demo">
+      <div class="section-inner align-center">
+        <p class="label">Effect 04 — Scale</p>
+        <h2>Scale + parallax combined</h2>
+        <p class="desc desc-center">One variable, two effects. Odd items float up, even float down.</p>
+        <pre class="code-center code-w-460"><code><span class="tk">.item</span> {
+  <span class="tk">scale</span>: <span class="tf">clamp</span>(0.4, <span class="tf">calc</span>(1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 500), 1.15);
+  <span class="tk">transition</span>: scale 0.15s ease-out;
+}</code></pre>
+        <div class="scale-items">
+          <div class="scale-item sv-track si-1">★</div>
+          <div class="scale-item sv-track si-2">◆</div>
+          <div class="scale-item sv-track si-3">▲</div>
+          <div class="scale-item sv-track si-4">●</div>
+          <div class="scale-item sv-track si-5">✦</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 6. 3D ROTATE ═══════════════ -->
+    <section id="rotate-demo">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="rotate-scene">
+            <div class="rotate-card sv-track">⬡</div>
+          </div>
+          <div>
+            <p class="label">Effect 05 — 3D Rotate</p>
+            <h2>Natural 3D tilt</h2>
+            <p class="desc">
+              Scroll offset drives both <code>rotateY</code> and <code>rotateX</code>. Parent needs
+              <code>perspective</code>.
+            </p>
+            <pre><code><span class="tk">.card</span> {
+  <span class="tk">transform</span>:
+    <span class="tf">rotateY</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) / 8 * 1deg))
+    <span class="tf">rotateX</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) / -12 * 1deg));
+  <span class="tk">transition</span>: transform 0.15s ease-out;
+}
+<span class="tk">.scene</span> { perspective: 900px; }</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 7. CLIP-PATH REVEAL ═══════════════ -->
+    <section id="clip-demo">
+      <div class="section-inner">
+        <div class="demo-split split-stack-start">
+          <p class="label">Effect 06 — Clip-path reveal</p>
+          <h2>Bars reveal at center</h2>
+          <p class="desc">
+            <code>clip-path: inset()</code> driven by <code>abs(--scroll-offset)</code> — fully visible only at viewport
+            center.
+          </p>
+          <pre><code><span class="tk">.bar</span> {
+  <span class="tk">clip-path</span>: <span class="tf">inset</span>(0
+    <span class="tf">calc</span>(<span class="tf">clamp</span>(0%, (<span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) - 60) / 3 * 1%, 100%))
+    0 0 round 12px);
+  <span class="tk">transition</span>: clip-path 0.15s ease-out;
+}</code></pre>
+          <br />
+          <div class="clip-bars">
+            <div class="clip-bar sv-track cb-1">Parallax</div>
+            <div class="clip-bar sv-track cb-2">Fade + Blur</div>
+            <div class="clip-bar sv-track cb-3">Hue rotate + Color temp</div>
+            <div class="clip-bar sv-track cb-4">Scale · 3D · Clip · Progress</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 8. PROGRESS RING ═══════════════ -->
+    <section id="ring-demo">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 260 260">
+              <defs>
+                <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#6c5ce7" />
+                  <stop offset="100%" stop-color="#a29bfe" />
+                </linearGradient>
+              </defs>
+              <circle class="ring-track" cx="130" cy="130" r="110" />
+              <circle class="ring-fill sv-track" cx="130" cy="130" r="110" />
+            </svg>
+            <div class="ring-label">
+              <div class="ring-pct" id="ring-pct-val">0%</div>
+              <div class="ring-pct-sub">scroll progress</div>
+            </div>
+          </div>
+          <div>
+            <p class="label">Effect 07 — Progress ring</p>
+            <h2>SVG circle fill</h2>
+            <p class="desc">
+              <code>stroke-dashoffset</code> on an SVG circle — fills to 100% when element is centered. Works with CSS
+              or driven via JS update.
+            </p>
+            <pre><code><span class="tc">/* 2π × r = 691 for r=110 */</span>
+<span class="tk">.ring</span> {
+  stroke-dasharray: <span class="tv">691</span>;
+  stroke-dashoffset: <span class="tf">clamp</span>(0px,
+    <span class="tf">calc</span>(691px * (1 - <span class="tf">clamp</span>(0,
+      1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 320,
+    1))), 691px);
+  <span class="tk">transition</span>: stroke-dashoffset 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 9. BLUR FOCUS ═══════════════ -->
+    <section id="blur-demo">
+      <div class="section-inner align-center">
+        <p class="label">Effect 08 — Blur focus</p>
+        <h2>Sharpens at center</h2>
+        <p class="desc desc-center">
+          Items are blurry when away from viewport center, and come into focus as they approach it.
+        </p>
+        <pre class="code-center code-w-480"><code><span class="tk">.item</span> {
+  <span class="tk">filter</span>: <span class="tf">blur</span>(<span class="tf">clamp</span>(0px, <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 40 * 1px, 12px));
+  <span class="tk">opacity</span>: <span class="tf">clamp</span>(0.15, <span class="tf">calc</span>(1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 350), 1);
+  <span class="tk">transition</span>: filter 0.2s ease-out, opacity 0.2s ease-out;
+}</code></pre>
+        <div class="blur-items">
+          <div class="blur-item sv-track">
+            <div class="blur-item-icon">⬡</div>
+            <h3>Sharp</h3>
+          </div>
+          <div class="blur-item sv-track">
+            <div class="blur-item-icon">◎</div>
+            <h3>Focus</h3>
+          </div>
+          <div class="blur-item sv-track">
+            <div class="blur-item-icon">✦</div>
+            <h3>Clear</h3>
+          </div>
+          <div class="blur-item sv-track">
+            <div class="blur-item-icon">▲</div>
+            <h3>Crisp</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 10. LETTER SPACING ═══════════════ -->
+    <section id="letter-demo">
+      <div class="section-inner align-center">
+        <p class="label">Effect 09 — Letter spacing</p>
+        <h2>Typography expands</h2>
+        <p class="desc desc-center-lg">
+          Letters spread apart as the element scrolls away from center. Combine with <code>opacity</code> for a
+          cinematic feel.
+        </p>
+        <div class="overflow-hidden">
+          <div class="letter-word sv-track lw-1">SCROLL</div>
+          <div class="letter-word sv-track lw-2">DRIVEN</div>
+          <div class="letter-word sv-track lw-3">CSS</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 11. BORDER RADIUS MORPH ═══════════════ -->
+    <section id="morph-demo">
+      <div class="section-inner align-center">
+        <p class="label">Effect 10 — Border radius morph</p>
+        <h2>Square morphs to circle</h2>
+        <p class="desc desc-center">
+          <code>border-radius</code> driven by <code>abs(--scroll-offset)</code> — perfectly square at center, circle at
+          edges.
+        </p>
+        <pre class="code-center code-w-460"><code><span class="tk">.item</span> {
+  <span class="tk">border-radius</span>: <span class="tf">clamp</span>(12px, <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 5 * 1px, 50%);
+  <span class="tk">transition</span>: border-radius 0.2s ease-out;
+}</code></pre>
+        <div class="morph-grid">
+          <div class="morph-item sv-track mi-1">★</div>
+          <div class="morph-item sv-track mi-2">◆</div>
+          <div class="morph-item sv-track mi-3">●</div>
+          <div class="morph-item sv-track mi-4">✦</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 12. SKEW ═══════════════ -->
+    <section id="skew-demo">
+      <div class="section-inner">
+        <p class="label">Effect 11 — Skew</p>
+        <h2>Alternating skew</h2>
+        <p class="desc">
+          Odd bands skew right, even skew left — created with <code>:nth-child(even)</code> negating the same variable.
+        </p>
+        <pre><code><span class="tk">.band</span>              { <span class="tk">transform</span>: <span class="tf">skewX</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) /  20 * 1deg)); }
+<span class="tk">.band:nth-child(even)</span> { <span class="tk">transform</span>: <span class="tf">skewX</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) / -20 * 1deg)); }</code></pre>
+        <br />
+        <div class="skew-band sv-track sb-1">Skew right →</div>
+        <div class="skew-band sv-track sb-2">← Skew left</div>
+        <div class="skew-band sv-track sb-3">Skew right →</div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 13. BOX SHADOW DEPTH ═══════════════ -->
+    <section id="shadow-demo">
+      <div class="section-inner align-center">
+        <p class="label">Effect 12 — Box shadow depth</p>
+        <h2>Cards float to the surface</h2>
+        <p class="desc desc-center">
+          Shadow grows as the element reaches viewport center — like a card physically rising off the page.
+        </p>
+        <pre class="code-center code-w-520"><code><span class="tk">.card</span> {
+  <span class="tk">box-shadow</span>: 0
+    <span class="tf">calc</span>((1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 280) * 40px)
+    <span class="tf">calc</span>((1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 280) * 80px)
+    rgba(108,92,231, <span class="tf">calc</span>((1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 280) * 0.5));
+  <span class="tk">transition</span>: box-shadow 0.2s ease-out, transform 0.2s ease-out;
+}</code></pre>
+        <div class="shadow-cards">
+          <div class="shadow-card sv-track">
+            <div class="shadow-card-icon">⬡</div>
+            <h3>Floating</h3>
+            <p>Deep shadow at center</p>
+          </div>
+          <div class="shadow-card sv-track">
+            <div class="shadow-card-icon">◈</div>
+            <h3>Rising</h3>
+            <p>Elevates on approach</p>
+          </div>
+          <div class="shadow-card sv-track">
+            <div class="shadow-card-icon">✦</div>
+            <h3>Hovering</h3>
+            <p>Falls back at edges</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 14. COLOR TEMPERATURE ═══════════════ -->
+    <section id="color-demo">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="color-swatch sv-track">🌡️</div>
+          <div>
+            <p class="label">Effect 13 — Color temperature</p>
+            <h2>Cool → warm on scroll</h2>
+            <p class="desc">
+              HSL hue shifts from <code>220°</code> (cool blue) through <code>120°</code> (green) to
+              <code>30°</code> (warm orange) as the element scrolls.
+            </p>
+            <pre><code><span class="tk">.swatch</span> {
+  <span class="tk">background</span>: <span class="tf">hsl</span>(
+    <span class="tf">calc</span>(220deg - <span class="tf">clamp</span>(-100deg,
+      <span class="tf">var</span>(--scroll-offset) / 4 * 1deg,
+      100deg)),
+    80%, 55%
+  );
+  <span class="tk">transition</span>: background 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 15. PROGRESS BARS ═══════════════ -->
+    <section id="progress-demo">
+      <div class="section-inner">
+        <div class="demo-split split-stack-start">
+          <p class="label">Effect 14 — Progress bars</p>
+          <h2>Fill on center</h2>
+          <p class="desc">
+            Bars fill to 100% exactly when the element center hits the viewport center — great for skill bars or step
+            indicators.
+          </p>
+          <pre><code><span class="tk">.fill</span> {
+  <span class="tk">width</span>: <span class="tf">clamp</span>(0%,
+    <span class="tf">calc</span>((1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 320) * 100%),
+    100%);
+  <span class="tk">transition</span>: width 0.2s ease-out;
+}</code></pre>
+          <br />
+          <div class="progress-list">
+            <div class="progress-row">
+              <div class="progress-label-row"><span class="progress-name">Parallax</span></div>
+              <div class="progress-track"><div class="progress-fill sv-track pf-1"></div></div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-label-row"><span class="progress-name">Fade &amp; Blur</span></div>
+              <div class="progress-track"><div class="progress-fill sv-track pf-2"></div></div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-label-row"><span class="progress-name">Scale &amp; Morph</span></div>
+              <div class="progress-track"><div class="progress-fill sv-track pf-3"></div></div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-label-row"><span class="progress-name">3D · Skew · Shadow</span></div>
+              <div class="progress-track"><div class="progress-fill sv-track pf-4"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 16. BACKGROUND ZOOM ═══════════════ -->
+    <section id="bgzoom-demo">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="bgzoom-box sv-track">
+            <div class="bgzoom-inner">
+              <span id="grid-size-val">40px</span>
+              <div class="muted-note">grid cell size</div>
+            </div>
+          </div>
+          <div>
+            <p class="label">Effect 15 — Background zoom</p>
+            <h2>Grid cell size on scroll</h2>
+            <p class="desc">
+              <code>background-size</code> changes with scroll — the grid zooms in or out. Works for any repeating
+              pattern: dots, lines, checkerboard.
+            </p>
+            <pre><code><span class="tk">.grid</span> {
+  <span class="tk">background-image</span>:
+    repeating-linear-gradient(0deg, ...),
+    repeating-linear-gradient(90deg, ...);
+  <span class="tk">background-size</span>:
+    <span class="tf">calc</span>(40px + <span class="tf">clamp</span>(0px, <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 8 * 1px, 80px))
+    <span class="tf">calc</span>(40px + <span class="tf">clamp</span>(0px, <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 8 * 1px, 80px));
+  <span class="tk">transition</span>: background-size 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 16. TRANSLATE X ═══════════════ -->
+    <section id="tx-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 16 — translateX</p>
+        <h2>Horizontal drift</h2>
+        <p class="desc desc-center">
+          Elements drift left or right. Odd cards go right, even go left — one variable, opposite directions via sign
+          inversion.
+        </p>
+        <div class="tx-grid">
+          <div class="tx-item sv-track tx-1">⬡</div>
+          <div class="tx-item sv-track tx-2">◆</div>
+          <div class="tx-item sv-track tx-3">▲</div>
+          <div class="tx-item sv-track tx-4">●</div>
+          <div class="tx-item sv-track tx-5">✦</div>
+          <div class="tx-item sv-track tx-6">★</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 17. ROTATE Z ═══════════════ -->
+    <section id="rotz-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 17 — rotate (Z axis)</p>
+        <h2>Spin on scroll</h2>
+        <p class="desc desc-center">
+          Each dial rotates at a different speed. Scroll direction maps directly to clockwise / counter-clockwise
+          rotation.
+        </p>
+        <div class="rotz-grid">
+          <div class="rotz-item sv-track rotz-c1">◎</div>
+          <div class="rotz-item sv-track rotz-c2">⟳</div>
+          <div class="rotz-item sv-track rotz-c3">⌛</div>
+          <div class="rotz-item sv-track rotz-c4">✦</div>
+          <div class="rotz-item sv-track rotz-c5">⊕</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 18. TRANSLATE Z / DEPTH ═══════════════ -->
+    <section id="tz-demo" class="bg-page">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="tz-scene">
+            <div class="tz-card sv-track tz-back">Back</div>
+            <div class="tz-card sv-track tz-mid">Mid</div>
+            <div class="tz-card sv-track tz-front">Front</div>
+          </div>
+          <div>
+            <p class="label">Effect 18 — translateZ + perspective</p>
+            <h2>Depth zoom</h2>
+            <p class="desc">
+              Cards at different Z depths — the closer the card, the faster it approaches. Pure CSS perspective.
+            </p>
+            <pre><code><span class="tk">.tz-scene</span> { <span class="tk">perspective</span>: <span class="tv">800px</span>; }
+<span class="tk">.back</span>  { <span class="tk">transform</span>: <span class="tf">translateZ</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * -0.2px)); }
+<span class="tk">.mid</span>   { <span class="tk">transform</span>: <span class="tf">translateZ</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * -0.5px)); }
+<span class="tk">.front</span> { <span class="tk">transform</span>: <span class="tf">translateZ</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * -0.9px)); }</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 19. SKEW Y ═══════════════ -->
+    <section id="skewy-demo" class="bg-surface">
+      <div class="section-inner">
+        <p class="label">Effect 19 — skewY</p>
+        <h2>Vertical shear</h2>
+        <p class="desc">skewY creates a paper-fold illusion. Combined with opacity it looks like pages turning.</p>
+        <div class="skewy-grid">
+          <div class="skewy-item sv-track sy-1">Shear →</div>
+          <div class="skewy-item sv-track sy-2">← Shear</div>
+          <div class="skewy-item sv-track sy-3">Shear →</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 20–24. FILTERS GRID ═══════════════ -->
+    <section id="filters-demo" class="bg-page">
+      <div class="section-inner">
+        <p class="label">Effects 20–24 — Five filters in one section</p>
+        <h2>brightness · contrast · saturate · grayscale · sepia</h2>
+        <p class="desc">
+          All five driven by the same variable. Each filter responds to <code>abs(--scroll-offset)</code> — maximum
+          effect at the edges, neutral at center.
+        </p>
+        <div class="filters-grid">
+          <div class="filter-cell sv-track fc-bright">
+            <div class="filter-label">brightness</div>
+          </div>
+          <div class="filter-cell sv-track fc-contrast">
+            <div class="filter-label">contrast</div>
+          </div>
+          <div class="filter-cell sv-track fc-saturate">
+            <div class="filter-label">saturate</div>
+          </div>
+          <div class="filter-cell sv-track fc-gray">
+            <div class="filter-label">grayscale</div>
+          </div>
+          <div class="filter-cell sv-track fc-sepia">
+            <div class="filter-label">sepia</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 25–26. INVERT + DROP-SHADOW ═══════════════ -->
+    <section id="invert-demo" class="bg-surface">
+      <div class="section-inner">
+        <p class="label">Effects 25–26 — invert · drop-shadow</p>
+        <h2>Negative & filter shadow</h2>
+        <p class="desc">
+          <code>invert()</code> flips colors — 0% at center, 100% at edges. <code>drop-shadow()</code> blur radius grows
+          on approach.
+        </p>
+        <div class="invert-grid">
+          <div class="invert-box sv-track">
+            <div class="inv-label">invert</div>
+          </div>
+          <div class="dropshadow-box sv-track">
+            <div class="inv-label">drop-shadow</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 27–28. TEXT COLOR + BORDER COLOR ═══════════════ -->
+    <section id="textcolor-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effects 27–28 — text color · border color</p>
+        <h2>Color driven by scroll</h2>
+        <p class="desc desc-center">
+          HSL hue shifts on both <code>color</code> and <code>border-color</code>. The hue angle is calculated directly
+          from <code>--scroll-offset</code>.
+        </p>
+        <div class="textcolor-words">
+          <div class="tc-word sv-track tw-1">Scroll</div>
+          <div class="tc-word sv-track tw-2">drives</div>
+          <div class="tc-word sv-track tw-3">color</div>
+        </div>
+        <div class="border-boxes">
+          <div class="border-box sv-track bb-1"></div>
+          <div class="border-box sv-track bb-2"></div>
+          <div class="border-box sv-track bb-3"></div>
+          <div class="border-box sv-track bb-4"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 29. TEXT SHADOW ═══════════════ -->
+    <section id="textshadow-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 29 — text-shadow</p>
+        <h2>Glowing text</h2>
+        <p class="desc desc-center">
+          Blur radius of <code>text-shadow</code> shrinks to 0 at center — the text sharpens and glows as it reaches
+          focus.
+        </p>
+        <div class="glow-text sv-track glow-1">FOCUS</div>
+        <div class="glow-text sv-track glow-2">CENTER</div>
+        <div class="glow-text sv-track glow-3">GLOW</div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 30. FONT SIZE ═══════════════ -->
+    <section id="fontsize-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 30 — font-size</p>
+        <h2>Breathing typography</h2>
+        <p class="desc desc-center">
+          Font size peaks at viewport center and shrinks toward the edges — like a word physically stepping into a
+          spotlight.
+        </p>
+        <div class="fontsize-line">
+          <span class="fs-word sv-track fw-1">BIG</span>
+          <span class="fs-word sv-track fw-2">AT</span>
+          <span class="fs-word sv-track fw-3">CENTER</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 31. WORD SPACING ═══════════════ -->
+    <section id="wordspacing-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 31 — word-spacing</p>
+        <h2>Words breathe apart</h2>
+        <p class="desc desc-center">
+          <code>word-spacing</code> at its natural value at center, expands toward the edges — a typographic stretch
+          effect.
+        </p>
+        <p class="word-spacer sv-track ws-1">Design driven by CSS</p>
+        <p class="word-spacer sv-track ws-2">One variable rules all</p>
+        <p class="word-spacer sv-track ws-3">Scroll to transform</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 32. LINE HEIGHT ═══════════════ -->
+    <section id="lineheight-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 32 — line-height</p>
+        <h2>Lines open and close</h2>
+        <p class="desc desc-center">
+          <code>line-height</code> is tight at the edges, relaxed at center. Feels like the text is breathing.
+        </p>
+        <p class="lineheight-block sv-track lh-para">
+          One CSS variable.<br />
+          Unlimited effects.<br />
+          No config in JS.<br />
+          All logic in CSS.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 33. CLIP-PATH CIRCLE ═══════════════ -->
+    <section id="circle-demo" class="bg-surface">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="circle-reveal-wrap">
+            <div class="circle-reveal-box sv-track">
+              <span>●</span>
+            </div>
+          </div>
+          <div>
+            <p class="label">Effect 33 — clip-path circle()</p>
+            <h2>Circle reveal</h2>
+            <p class="desc">
+              Circular mask grows from 0 to 100% as element approaches center. Different from <code>inset()</code> —
+              grows radially from the middle.
+            </p>
+            <pre><code><span class="tk">.box</span> {
+  <span class="tk">clip-path</span>: <span class="tf">circle</span>(
+    <span class="tf">clamp</span>(0%, <span class="tf">calc</span>(
+      (1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 320) * 80%
+    ), 80%)
+  );
+  <span class="tk">transition</span>: clip-path 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 34. CLIP-PATH POLYGON STAR ═══════════════ -->
+    <section id="star-demo" class="bg-page">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="star-wrap">
+            <div class="star-morph sv-track"></div>
+          </div>
+          <div>
+            <p class="label">Effect 34 — clip-path polygon</p>
+            <h2>Square → star morph</h2>
+            <p class="desc">
+              Polygon vertices are driven by <code>--scroll-offset</code>. At center: square. At edges: star with inward
+              points.
+            </p>
+            <pre><code><span class="tk">.star</span> {
+  <span class="tk">clip-path</span>: <span class="tf">polygon</span>(
+    50% <span class="tf">calc</span>(<span class="tf">clamp</span>(0%, <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset))/5*1%, 50%)),
+    100% 50%, 50% 100%, 0% 50%
+  );
+  <span class="tk">transition</span>: clip-path 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 35. OUTLINE OFFSET ═══════════════ -->
+    <section id="outline-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 35 — outline-offset</p>
+        <h2>Pulsing outline ring</h2>
+        <p class="desc desc-center">
+          <code>outline-offset</code> expands away from the element at the edges and collapses to zero at center — a
+          radar-ping feel.
+        </p>
+        <div class="outline-items">
+          <div class="outline-item sv-track oi-1">⬡</div>
+          <div class="outline-item sv-track oi-2">◆</div>
+          <div class="outline-item sv-track oi-3">●</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 36. BORDER WIDTH ═══════════════ -->
+    <section id="borderw-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 36 — border-width</p>
+        <h2>Border grows at center</h2>
+        <p class="desc desc-center">
+          <code>border-width</code> peaks when element is at viewport center. The thickest border = perfect position
+          indicator.
+        </p>
+        <div class="borderw-items">
+          <div class="borderw-item sv-track bw-1">01</div>
+          <div class="borderw-item sv-track bw-2">02</div>
+          <div class="borderw-item sv-track bw-3">03</div>
+          <div class="borderw-item sv-track bw-4">04</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 37. SVG STROKE WIDTH ═══════════════ -->
+    <section id="strokew-demo" class="bg-surface">
+      <div class="section-inner">
+        <div class="demo-split">
+          <svg class="strokew-svg" viewBox="0 0 300 300">
+            <defs>
+              <linearGradient id="sw-grad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#6c5ce7" />
+                <stop offset="100%" stop-color="#fd79a8" />
+              </linearGradient>
+            </defs>
+            <circle class="sw-circle sv-track sw-c1" cx="150" cy="150" r="120" fill="none" stroke="url(#sw-grad)" />
+            <circle class="sw-circle sv-track sw-c2" cx="150" cy="150" r="80" fill="none" stroke="#fd79a8" />
+            <circle class="sw-circle sv-track sw-c3" cx="150" cy="150" r="40" fill="none" stroke="#55efc4" />
+          </svg>
+          <div>
+            <p class="label">Effect 37 — stroke-width (SVG)</p>
+            <h2>SVG lines breathe</h2>
+            <p class="desc">
+              SVG <code>stroke-width</code> driven by CSS variable — concentric rings, each at different breath rate.
+            </p>
+            <pre><code><span class="tk">circle</span> {
+  <span class="tk">stroke-width</span>: <span class="tf">clamp</span>(1px,
+    <span class="tf">calc</span>((1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 300) * 20px),
+  20px);
+  <span class="tk">transition</span>: stroke-width 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 38. SVG FILL COLOR ═══════════════ -->
+    <section id="svgfill-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 38 — SVG fill + opacity</p>
+        <h2>SVG shapes shift color</h2>
+        <p class="desc desc-center">
+          CSS custom properties work on SVG <code>fill</code> and <code>opacity</code> just like HTML elements.
+        </p>
+        <svg class="svgfill-svg" viewBox="0 0 500 200">
+          <polygon class="sf-shape sv-track sf-1" points="50,10 90,90 10,90" />
+          <rect class="sf-shape sv-track sf-2" x="150" y="20" width="80" height="80" rx="8" />
+          <circle class="sf-shape sv-track sf-3" cx="330" cy="60" r="50" />
+          <polygon class="sf-shape sv-track sf-4" points="430,10 480,60 455,100 405,100 380,60" />
+        </svg>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 39. BACKGROUND POSITION ═══════════════ -->
+    <section id="bgpos-demo" class="bg-surface">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="bgpos-box sv-track"></div>
+          <div>
+            <p class="label">Effect 39 — background-position</p>
+            <h2>Background parallax</h2>
+            <p class="desc">
+              The background image moves at a slower rate than the element — classic parallax without any extra DOM
+              elements.
+            </p>
+            <pre><code><span class="tk">.el</span> {
+  <span class="tk">background-position</span>:
+    50%
+    <span class="tf">calc</span>(50% + <span class="tf">var</span>(--scroll-offset) * 0.3px);
+  <span class="tk">transition</span>: background-position 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 40. STAGGER ═══════════════ -->
+    <section id="stagger-demo" class="bg-page">
+      <div class="section-inner">
+        <p class="label">Effect 40 — stagger (nth-child delay)</p>
+        <h2>Cascading entrance</h2>
+        <p class="desc">
+          One <code>ScrollVar</code> instance, one variable. The stagger is pure CSS — <code>transition-delay</code> via
+          <code>:nth-child</code>.
+        </p>
+        <pre><code><span class="tk">.item:nth-child(1)</span> { <span class="tk">transition-delay</span>: <span class="tv">0ms</span>; }
+<span class="tk">.item:nth-child(2)</span> { <span class="tk">transition-delay</span>: <span class="tv">60ms</span>; }
+<span class="tk">.item:nth-child(3)</span> { <span class="tk">transition-delay</span>: <span class="tv">120ms</span>; }</code></pre>
+        <br />
+        <div class="stagger-grid">
+          <div class="stagger-item sv-track sg-1">01</div>
+          <div class="stagger-item sv-track sg-2">02</div>
+          <div class="stagger-item sv-track sg-3">03</div>
+          <div class="stagger-item sv-track sg-4">04</div>
+          <div class="stagger-item sv-track sg-5">05</div>
+          <div class="stagger-item sv-track sg-6">06</div>
+          <div class="stagger-item sv-track sg-7">07</div>
+          <div class="stagger-item sv-track sg-8">08</div>
+          <div class="stagger-item sv-track sg-9">09</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 41. BACKDROP FILTER ═══════════════ -->
+    <section id="backdrop-demo" class="bg-surface">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="backdrop-wrap">
+            <div class="backdrop-bg"></div>
+            <div class="backdrop-panel sv-track"></div>
+          </div>
+          <div>
+            <p class="label">Effect 41 — backdrop-filter blur</p>
+            <h2>Frosted glass</h2>
+            <p class="desc">
+              The glass panel's blur radius responds to scroll — clear at center, fully frosted at the edges.
+            </p>
+            <pre><code><span class="tk">.glass</span> {
+  <span class="tk">backdrop-filter</span>: <span class="tf">blur</span>(
+    <span class="tf">clamp</span>(0px,
+      <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset)) / 15 * 1px,
+    24px)
+  );
+  <span class="tk">transition</span>: backdrop-filter 0.2s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 42. MULTI-TRANSFORM STACK ═══════════════ -->
+    <section id="multitr-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 42 — multi-transform stack</p>
+        <h2>translate + rotate + scale</h2>
+        <p class="desc desc-center">
+          All three transforms applied simultaneously from one variable. The element orbits into position as it reaches
+          center.
+        </p>
+        <div class="multitr-scene">
+          <div class="multitr-card sv-track mt-1">1</div>
+          <div class="multitr-card sv-track mt-2">2</div>
+          <div class="multitr-card sv-track mt-3">3</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 43. PERSPECTIVE SQUISH ═══════════════ -->
+    <section id="persp-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 43 — perspective squish</p>
+        <h2>Near &amp; far</h2>
+        <p class="desc desc-center">
+          Cards shrink to nothing at edges and spring to full size at center — the <code>scaleX</code>/<code
+            >scaleY</code
+          >
+          split creates a squash effect.
+        </p>
+        <div class="persp-grid">
+          <div class="persp-item sv-track pi-1">Far ↑</div>
+          <div class="persp-item sv-track pi-2">Near</div>
+          <div class="persp-item sv-track pi-3">Far ↓</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 44. OUTLINE COLOR ═══════════════ -->
+    <section id="outcolor-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 44 — outline-color</p>
+        <h2>Chromatic focus ring</h2>
+        <p class="desc desc-center">
+          <code>outline-color</code> cycles through the spectrum as the element scrolls — like a chromatic aberration
+          ring around focused UI elements.
+        </p>
+        <div class="outcolor-items">
+          <div class="outcolor-item sv-track oc-1">⬡</div>
+          <div class="outcolor-item sv-track oc-2">◆</div>
+          <div class="outcolor-item sv-track oc-3">●</div>
+          <div class="outcolor-item sv-track oc-4">★</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 45. SCALE X/Y SPLIT ═══════════════ -->
+    <section id="scalexy-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 45 — scaleX / scaleY split</p>
+        <h2>Squash &amp; stretch</h2>
+        <p class="desc desc-center">
+          When scaleX grows, scaleY shrinks proportionally — the cartoon squash-and-stretch illusion. Preserves area
+          while deforming shape.
+        </p>
+        <div class="scalexy-items">
+          <div class="scalexy-item sv-track sxy-1">◉</div>
+          <div class="scalexy-item sv-track sxy-2">◉</div>
+          <div class="scalexy-item sv-track sxy-3">◉</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 46. CONIC GRADIENT ═══════════════ -->
+    <section id="conic-demo" class="bg-page">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="conic-visual sv-track"></div>
+          <div>
+            <p class="label">Effect 46 — conic-gradient rotation</p>
+            <h2>Spinning gradient</h2>
+            <p class="desc">
+              <code>hue-rotate</code> on a conic gradient — the color wheel spins as you scroll. The starting angle maps
+              to <code>--scroll-offset</code>.
+            </p>
+            <pre><code><span class="tk">.wheel</span> {
+  <span class="tk">background</span>: <span class="tf">conic-gradient</span>(
+    from <span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * 0.5deg),
+    #6c5ce7, #fd79a8, #fdcb6e,
+    #00b894, #6c5ce7
+  );
+  <span class="tk">transition</span>: background 0.15s ease-out;
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 47. TEXT INDENT ═══════════════ -->
+    <section id="indent-demo" class="bg-surface">
+      <div class="section-inner align-center">
+        <p class="label">Effect 47 — text-indent</p>
+        <h2>Cinematic text entrance</h2>
+        <p class="desc desc-center">
+          <code>text-indent</code> slides text in from the left. Combined with <code>opacity</code> it looks like a
+          title card appearing on screen.
+        </p>
+        <div class="indent-lines">
+          <div class="indent-line sv-track il-1">SCROLL</div>
+          <div class="indent-line sv-track il-2">DRIVEN</div>
+          <div class="indent-line sv-track il-3">MOTION</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 48. MARGIN TOP STAGGER ═══════════════ -->
+    <section id="marginstagger-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 48 — translateY stagger wave</p>
+        <h2>Wave entrance</h2>
+        <p class="desc desc-center">
+          Each item has the same variable but a different <code>transition-delay</code> — the wave cascades across the
+          row purely in CSS.
+        </p>
+        <div class="wave-row">
+          <div class="wave-item sv-track wi-1">A</div>
+          <div class="wave-item sv-track wi-2">B</div>
+          <div class="wave-item sv-track wi-3">C</div>
+          <div class="wave-item sv-track wi-4">D</div>
+          <div class="wave-item sv-track wi-5">E</div>
+          <div class="wave-item sv-track wi-6">F</div>
+          <div class="wave-item sv-track wi-7">G</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 49. COMPOSITE CARD ═══════════════ -->
+    <section id="composite-demo" class="bg-surface">
+      <div class="section-inner">
+        <div class="demo-split">
+          <div class="composite-scene">
+            <div class="composite-card sv-track"></div>
+          </div>
+          <div>
+            <p class="label">Effect 49 — composite (6 effects in 1)</p>
+            <h2>Everything at once</h2>
+            <p class="desc">
+              One element. One variable. Six simultaneous CSS effects: translate, rotate, scale, blur, hue-rotate,
+              opacity.
+            </p>
+            <pre><code><span class="tk">.card</span> {
+  <span class="tk">transform</span>:
+    <span class="tf">translateY</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * 0.3px))
+    <span class="tf">rotate</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) / 10 * 1deg))
+    <span class="tf">scale</span>(<span class="tf">clamp</span>(0.3, <span class="tf">calc</span>(1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset))/400), 1.1));
+  <span class="tk">filter</span>:
+    <span class="tf">blur</span>(<span class="tf">clamp</span>(0px, <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset))/30*1px, 8px))
+    <span class="tf">hue-rotate</span>(<span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset) * 0.5deg));
+  <span class="tk">opacity</span>: <span class="tf">clamp</span>(0.1, <span class="tf">calc</span>(1 - <span class="tf">abs</span>(<span class="tf">var</span>(--scroll-offset))/400), 1);
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ 50. SHOWCASE STRIP ═══════════════ -->
+    <section id="showcase-demo" class="bg-page">
+      <div class="section-inner align-center">
+        <p class="label">Effect 50 — all-in-one showcase strip</p>
+        <h2>50 effects. One variable.</h2>
+        <p class="desc desc-center-lg">
+          Each tile uses a different CSS property. All driven by a single <code>new ScrollVar('.showcase-tile')</code>.
+        </p>
+        <div class="showcase-strip">
+          <div class="showcase-tile sv-track st-ty">translateY</div>
+          <div class="showcase-tile sv-track st-tx">translateX</div>
+          <div class="showcase-tile sv-track st-rz">rotateZ</div>
+          <div class="showcase-tile sv-track st-rx">rotateX</div>
+          <div class="showcase-tile sv-track st-sc">scale</div>
+          <div class="showcase-tile sv-track st-sk">skewX</div>
+          <div class="showcase-tile sv-track st-op">opacity</div>
+          <div class="showcase-tile sv-track st-bl">blur</div>
+          <div class="showcase-tile sv-track st-hu">hue</div>
+          <div class="showcase-tile sv-track st-br">bright</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+    <section id="how">
+      <div class="section-inner">
+        <p class="label">How it works</p>
+        <h2>One number. Endless CSS.</h2>
+        <p class="desc">
+          ScrollVar writes <code>(elementCenter − viewportCenter)</code> in pixels to a CSS variable on every scroll
+          frame.
+        </p>
+        <div class="how-grid">
+          <div class="how-card">
+            <h3>JS — one line</h3>
+            <pre><code><span class="tf">new</span> <span class="tf">ScrollVar</span>(<span class="ts">'.hero'</span>);</code></pre>
+          </div>
+          <div class="how-card">
+            <h3>CSS — your logic</h3>
+            <pre><code><span class="tk">.hero</span> {
+  <span class="tk">--speed</span>: <span class="tv">0.15</span>;
+  <span class="tk">transform</span>: <span class="tf">translateY</span>(
+    <span class="tf">calc</span>(<span class="tf">var</span>(--scroll-offset)
+      * <span class="tf">var</span>(--speed) * 1px)
+  );
+}</code></pre>
+          </div>
+          <div class="how-card">
+            <h3>Variable value</h3>
+            <pre><code><span class="tc">/* negative → element below center */</span>
+<span class="tc">/* zero     → element at center    */</span>
+<span class="tc">/* positive → element above center */</span>
+
+elementCenter − viewportCenter</code></pre>
+          </div>
+          <div class="how-card">
+            <h3>Per-element name</h3>
+            <pre><code>&lt;<span class="tk">section</span>
+  <span class="tf">data-scroll-var</span>=<span class="ts">"--hero-offset"</span>
+&gt;&lt;/section&gt;
+
+<span class="tf">new</span> <span class="tf">ScrollVar</span>(<span class="ts">'[data-scroll-var]'</span>);</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ INSTALL ═══════════════ -->
+    <section id="install">
+      <div class="section-inner">
+        <p class="label">Get started</p>
+        <h2>Two ways to use</h2>
+        <br />
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="step-num">1</div>
+            <div>
+              <div class="muted-meta">Local file</div>
+              <code class="install-code">copy scrollvar.js to your project</code>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="step-num">2</div>
+            <div>
+              <div class="muted-meta">ES module</div>
+              <code class="install-code">import ScrollVar from './scrollvar.js'</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        <a href="https://github.com/zdimaz/scrollvar">GitHub</a>
+      </p>
+      <p class="footer-note">MIT License · Made with care</p>
+    </footer>
+
+    <script type="module">
+      import ScrollVar from "../scrollvar.js";
+
+      new ScrollVar(".sv-track");
+
+      // Live % readout for progress ring — read inline style ScrollVar writes
+      const ringFillEl = document.querySelector(".ring-fill");
+      const ringPctEl = document.getElementById("ring-pct-val");
+      function updateRingLabel() {
+        if (!ringFillEl || !ringPctEl) return;
+        const offset = parseFloat(ringFillEl.style.getPropertyValue("--scroll-offset")) || 0;
+        const pct = Math.round(Math.max(0, Math.min(1, 1 - Math.abs(offset) / 320)) * 100);
+        ringPctEl.textContent = pct + "%";
+      }
+      window.addEventListener("scroll", updateRingLabel, { passive: true });
+      updateRingLabel();
+
+      // Scroll-to-top button visibility
+      const topBtn = document.getElementById("top-btn");
+      window.addEventListener(
+        "scroll",
+        () => {
+          topBtn.classList.toggle("visible", window.scrollY > 600);
+        },
+        { passive: true },
+      );
+      topBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    </script>
+  </body>
+</html>

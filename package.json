@@ -1,0 +1,34 @@
+{
+  "name": "scrollvar",
+  "version": "1.0.0",
+  "description": "Tiny scroll library that writes a single CSS variable. All effects live in CSS.",
+  "type": "module",
+  "main": "./scrollvar.js",
+  "module": "./scrollvar.js",
+  "exports": {
+    ".": "./scrollvar.js"
+  },
+  "files": [
+    "scrollvar.js"
+  ],
+  "keywords": [
+    "scroll",
+    "parallax",
+    "css-variables",
+    "css-custom-properties",
+    "animation",
+    "scroll-effects",
+    "vanilla-js",
+    "no-dependencies"
+  ],
+  "author": "Dudko Dmtrii",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zdimaz/scrollvar.git"
+  },
+  "homepage": "https://zdimaz.github.io/scrollvar/demo/",
+  "bugs": {
+    "url": "https://github.com/zdimaz/scrollvar/issues"
+  }
+}
